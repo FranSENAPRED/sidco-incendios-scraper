@@ -1,19 +1,19 @@
-name: Ejecutar Scraper SIDCO cada 1 minuto
+name: Ejecutar SIDCO Scraper cada 1 minuto
 
 on:
   schedule:
-    - cron: "* * * * *"   # Ejecuta cada 1 minuto
-  workflow_dispatch:       # Permite ejecutarlo manualmente
+    - cron: "* * * * *"    # corre cada 1 minuto
+  workflow_dispatch:        # permite ejecutarlo manualmente
 
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout del repositorio
+    - name: Clonar repositorio
       uses: actions/checkout@v3
 
-    - name: Configurar Python
+    - name: Instalar Python
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
@@ -21,18 +21,30 @@ jobs:
     - name: Instalar dependencias
       run: |
         pip install -r requirements.txt
+        pip install playwright
         playwright install chromium
 
-    - name: Ejecutar scraper
+    - name: Exportar variables de entorno
       env:
         SIDCO_USER: ${{ secrets.SIDCO_USER }}
         SIDCO_PASS: ${{ secrets.SIDCO_PASS }}
+      run: |
+        echo "SIDCO_USER=$SIDCO_USER" >> $GITHUB_ENV
+        echo "SIDCO_PASS=$SIDCO_PASS" >> $GITHUB_ENV
+
+    - name: Ejecutar scraper
       run: python sidco_scraper.py
 
-    - name: Guardar CSV actualizado
+    - name: Subir archivo CSV como artefacto
+      uses: actions/upload-artifact@v3
+      with:
+        name: incendios_vigentes_sidco
+        path: incendios_vigentes_sidco_enriquecido.csv
+
+    - name: Commit del CSV actualizado (opcional)
       run: |
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
-        git add .
-        git commit -m "Actualizar CSV SIDCO" || echo "No hay cambios"
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add *.csv
+        git commit -m "Actualización scraper SIDCO" || echo "No hay cambios"
         git push

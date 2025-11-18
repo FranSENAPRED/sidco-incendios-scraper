@@ -287,11 +287,27 @@ def parsear_ficha_incendio(html_ficha: str) -> dict:
 # ---------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------
+
 def main():
     df = scrapear_incendios_y_fichas()
 
+    # --- limpiar nombres de columnas para ArcGIS ---
+    # (saca caracteres raros/BOM y espacios al inicio/fin)
+    df.columns = (
+        df.columns.astype(str)
+        .str.replace(r"[^\x00-\x7F]", "", regex=True)  # quita caracteres no ASCII (incluye BOM)
+        .str.strip()
+    )
+
+    # --- guardar CSV sin BOM y separado por comas ---
     out_path = Path("incendios_vigentes_sidco_enriquecido.csv")
-    df.to_csv(out_path, index=False, encoding="utf-8-sig")
+    df.to_csv(
+        out_path,
+        index=False,
+        encoding="utf-8",  # << OJO: sin "-sig" para no agregar BOM
+        sep=",",           # separador coma estándar
+    )
+
     print(df.head())
     print(f"\nSe guardó {len(df)} registros en {out_path.resolve()}")
 

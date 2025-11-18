@@ -26,6 +26,11 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
+      - name: Probar acceso HTTP a SIDCO con curl
+        run: |
+          echo "Probando acceso a https://sidco.conaf.cl/login/index.php"
+          curl -v --max-time 20 https://sidco.conaf.cl/login/index.php || echo "curl falló"
+
       - name: Run scraper
         env:
           SIDCO_USER: ${{ secrets.SIDCO_USER }}

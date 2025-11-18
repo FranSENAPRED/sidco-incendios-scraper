@@ -2,12 +2,12 @@ name: Ejecutar SIDCO Scraper cada 1 minuto
 
 on:
   schedule:
-    - cron: "*/1 * * * *"   # GitHub lo intentará cada 1 minuto (self-hosted sí ejecuta exacto)
+    - cron: "*/1 * * * *"  # cada 1 minuto
   workflow_dispatch:
 
 jobs:
   run-scraper:
-    runs-on: [self-hosted, Windows, X64]   # Usa tu runner local real
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 15
     permissions:
       contents: write
@@ -16,40 +16,33 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+      # OJO: aquí asumimos que en tu máquina el comando `python` funciona.
+      # Si tú en PowerShell usas `py` en vez de `python`, lo cambiamos luego.
 
       - name: Install dependencies
-        shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           python -m playwright install chromium
 
+      - name: Probar acceso HTTP a SIDCO con curl
+        run: |
+          echo "Probando acceso a https://sidco.conaf.cl/login/index.php"
+          curl -v --max-time 20 https://sidco.conaf.cl/login/index.php || echo "curl falló"
+
       - name: Run scraper
-        shell: pwsh
         env:
           SIDCO_USER: ${{ secrets.SIDCO_USER }}
           SIDCO_PASS: ${{ secrets.SIDCO_PASS }}
         run: python sidco_scraper.py
 
       - name: Commit & push CSV
-        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.email "bot@github.com"
           git config --global user.name "GitHub Actions Bot"
-
           git add incendios_vigentes_sidco_enriquecido.csv
+          git commit -m "Actualizar CSV SIDCO" || echo "No hay cambios"
+          git push
 
-          # Verificar si hay cambios
-          if (git diff --cached --quiet) {
-            Write-Host "No hay cambios para commitear."
-          } else {
-            Write-Host "Realizando commit..."
-            git commit -m "Actualizar CSV SIDCO"
-            git push
-          }

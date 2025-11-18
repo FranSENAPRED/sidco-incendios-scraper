@@ -29,7 +29,8 @@ def scrapear_incendios_y_fichas() -> pd.DataFrame:
         page = browser.new_page()
 
         # 1) Ir al login
-        page.goto(f"{SIDCO_BASE}/login/index.php", wait_until="domcontentloaded")
+        page.goto(f"{SIDCO_BASE}/login/index.php", timeout=120_000)
+        page.wait_for_timeout(3000)  # 3 segundos de espera “pasiva”
 
         # 2) Esperar campos y llenar credenciales
         page.wait_for_selector('input[name="username"]')

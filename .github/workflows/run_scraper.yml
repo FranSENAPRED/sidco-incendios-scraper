@@ -2,13 +2,13 @@ name: Ejecutar SIDCO Scraper cada 1 minuto
 
 on:
   schedule:
-    - cron: "*/1 * * * *"  # cada 1 minuto
+    - cron: "*/1 * * * *"   # GitHub intenta cada 1 minuto (real: ~5 min)
   workflow_dispatch:
 
 jobs:
   run-scraper:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: [self-hosted, Windows, X64]   # <- Usa tu runner local
+    timeout-minutes: 15
     permissions:
       contents: write
 
@@ -22,23 +22,21 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
+        shell: powershell
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
-
-      - name: Probar acceso HTTP a SIDCO con curl
-        run: |
-          echo "Probando acceso a https://sidco.conaf.cl/login/index.php"
-          curl -v --max-time 20 https://sidco.conaf.cl/login/index.php || echo "curl falló"
+          python -m playwright install chromium
 
       - name: Run scraper
+        shell: powershell
         env:
           SIDCO_USER: ${{ secrets.SIDCO_USER }}
           SIDCO_PASS: ${{ secrets.SIDCO_PASS }}
         run: python sidco_scraper.py
 
       - name: Commit & push CSV
+        shell: powershell
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

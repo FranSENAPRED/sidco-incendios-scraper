@@ -1,0 +1,38 @@
+name: Ejecutar Scraper SIDCO cada 1 minuto
+
+on:
+  schedule:
+    - cron: "* * * * *"   # Ejecuta cada 1 minuto
+  workflow_dispatch:       # Permite ejecutarlo manualmente
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout del repositorio
+      uses: actions/checkout@v3
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Instalar dependencias
+      run: |
+        pip install -r requirements.txt
+        playwright install chromium
+
+    - name: Ejecutar scraper
+      env:
+        SIDCO_USER: ${{ secrets.SIDCO_USER }}
+        SIDCO_PASS: ${{ secrets.SIDCO_PASS }}
+      run: python sidco_scraper.py
+
+    - name: Guardar CSV actualizado
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add .
+        git commit -m "Actualizar CSV SIDCO" || echo "No hay cambios"
+        git push

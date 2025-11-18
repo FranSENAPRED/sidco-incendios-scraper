@@ -2,12 +2,12 @@ name: Ejecutar SIDCO Scraper cada 1 minuto
 
 on:
   schedule:
-    - cron: "*/1 * * * *"   # GitHub intenta cada 1 minuto (real: ~5 min)
+    - cron: "*/1 * * * *"   # GitHub lo intentará cada 1 minuto (self-hosted sí ejecuta exacto)
   workflow_dispatch:
 
 jobs:
   run-scraper:
-    runs-on: [self-hosted, Windows, X64]   # <- Usa tu runner local
+    runs-on: [self-hosted, Windows, X64]   # Usa tu runner local real
     timeout-minutes: 15
     permissions:
       contents: write
@@ -22,26 +22,34 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        shell: powershell
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           python -m playwright install chromium
 
       - name: Run scraper
-        shell: powershell
+        shell: pwsh
         env:
           SIDCO_USER: ${{ secrets.SIDCO_USER }}
           SIDCO_PASS: ${{ secrets.SIDCO_PASS }}
         run: python sidco_scraper.py
 
       - name: Commit & push CSV
-        shell: powershell
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.email "bot@github.com"
           git config --global user.name "GitHub Actions Bot"
+
           git add incendios_vigentes_sidco_enriquecido.csv
-          git commit -m "Actualizar CSV SIDCO" || echo "No hay cambios"
-          git push
+
+          # Verificar si hay cambios
+          if (git diff --cached --quiet) {
+            Write-Host "No hay cambios para commitear."
+          } else {
+            Write-Host "Realizando commit..."
+            git commit -m "Actualizar CSV SIDCO"
+            git push
+          }

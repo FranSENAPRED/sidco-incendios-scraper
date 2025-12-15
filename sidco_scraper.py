@@ -179,7 +179,7 @@ def parsear_tabla_incendios(html_page: str) -> pd.DataFrame:
 
         filas.append(
             {
-                "alerta_titulo": alerta_titulo,
+                #"alerta_titulo": alerta_titulo,
                 "alerta_codigo": alerta_codigo,
                 "fecha_raw": fecha_raw,
                 "fecha": fecha_dt,

@@ -1,8 +1,6 @@
 name: Ejecutar SIDCO Scraper cada 1 minuto
 
 on:
-  schedule:
-    - cron: "*/1 * * * *"   # GitHub lo intentará cada 1 minuto
   workflow_dispatch:
 
 jobs:
